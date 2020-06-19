@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 )
 
@@ -38,8 +37,11 @@ func login(w http.ResponseWriter, r *http.Request) {
 		// 请求的是登录数据，那么执行登录的逻辑判断
 		fmt.Println("username", r.Form["username"])
 		fmt.Println("password", r.Form["password"])
-		fmt.Println(reflect.TypeOf(r.Form))
-		fmt.Println(reflect.TypeOf(r.Form["password"]))
+		//fmt.Println(reflect.TypeOf(r.Form))
+		//fmt.Println(reflect.TypeOf(r.Form["password"]))
+		fmt.Println("username:", template.HTMLEscapeString(r.Form.Get("username")))
+		fmt.Println("password:", template.HTMLEscapeString(r.Form.Get("password")))
+		template.HTMLEscape(w, []byte(r.Form.Get("username"))) //输出到客服端
 		v := url.Values{}
 		v.Set("name", "Ava")
 		v.Add("friend", "Jess")
@@ -79,5 +81,13 @@ func main() {
 	//如 r.Form ["username"] 也可写成 r.FormValue ("username")。
 	//调用 r.FormValue 时会自动调用 r.ParseForm，所以不必提前调用。
 	//r.FormValue 只会返回同名参数中的第一个，若参数不存在则返回空字符串
+	//
+
+	//预防跨站脚本
+	// Go 的 html/template 里面带有下面几个函数可以帮你转义
+	//
+	//func HTMLEscape (w io.Writer, b [] byte) // 把 b 进行转义之后写到 w
+	//func HTMLEscapeString (s string) string // 转义 s 之后返回结果字符串
+	//func HTMLEscaper (args ...interface {}) string // 支持多个参数一起转义，返回结果字符串
 	//
 }
