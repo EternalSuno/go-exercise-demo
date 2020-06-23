@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -207,7 +210,52 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func postFile(filename string, targetUrl string) error {
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	//关键一步操作
+	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", filename)
+	if err != nil {
+		fmt.Println("error writing to buffer")
+		return err
+	}
+
+	//打开文件句柄操作
+	fh, err := os.Open(filename)
+	if err != nil {
+		fmt.Println("error opening file")
+		return err
+	}
+	defer fh.Close()
+
+	//iocopy
+	_, err = io.Copy(fileWriter, fh)
+	if err != nil {
+		return err
+	}
+
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+	resp, err := http.Post(targetUrl, contentType, bodyBuf)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	resp_body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Println(resp.Status)
+	fmt.Println(string(resp_body))
+	return nil
+}
+
 func main() {
+	target_url := "http://localhost:9090/upload"
+	filename := "./astaxie.pdf"
+	postFile(filename, target_url)
+
 	http.HandleFunc("/", sayhelloName)       //设置路由
 	http.HandleFunc("/login", login)         //设置路由
 	http.HandleFunc("/upload", upload)       //设置路由
@@ -304,5 +352,30 @@ func main() {
 	//if m, _ := regexp.MatchString("\\p{Han}+$", r.Form.Get("realname")); !m{
 	//	return false
 	//}
+
+	//处理文件上传我们需要调用 r.ParseMultipartForm，里面的参数表示 maxMemory，调用 ParseMultipartForm 之后，
+	//上传的文件存储在 maxMemory 大小的内存里面，如果文件大小超过了 maxMemory，那么剩下的部分将存储在系统的临时文件中。
+	//我们可以通过 r.FormFile 获取上面的文件句柄，然后实例中使用了 io.Copy 来存储文件。
+	//
+
+	//获取其他非文件字段信息的时候就不需要调用 r.ParseForm，因为在需要的时候 Go 自动会去调用。
+	//而且 ParseMultipartForm 调用一次之后，后面再次调用不会再有效果。
+
+	//表单中增加 enctype="multipart/form-data"
+	//服务端调用 r.ParseMultipartForm, 把上传的文件存储在内存和临时文件中
+	//使用 r.FormFile 获取文件句柄，然后对文件进行存储等处理。
+	//
+
+	//
+	//type FileHeader struct {
+	//	Filename string
+	//	Header   textproto.MIMEHeader
+	//	// contains filtered or unexported fields
+	//}
+	//输出
+	//map[Content-Type:[application/pdf] Content-Disposition:[form-data; name="file"; filename="The Little Book on CoffeeScript.pdf"]]
+
+	//客户端上传文件
+	//我们上面的例子演示了如何通过表单上传文件，然后在服务器端处理文件，其实 Go 支持模拟客户端表单功能支持文件上传，详细用法请看如下示例：
 
 }
