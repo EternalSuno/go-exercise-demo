@@ -79,4 +79,14 @@ func beego() {
 	//	o := orm.NewOrm()
 	//}
 
+	//SetMaxIdleConns
+	//根据数据库的别名，设置数据库的最大空闲连接
+	//orm.SetMaxIdleConns("default", 30)
+
+	//SetMaxOpenConns
+	//根据数据库的别名, 设置数据库的最大数据库连接(go >= 1.2)
+
+	//目前 beego orm 支持打印调试，你可以通过如下的代码实现调试
+	//orm.Debug = true
+
 }
