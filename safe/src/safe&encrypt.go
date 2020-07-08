@@ -1,0 +1,6 @@
+package src
+
+func safe() {
+	//
+	//
+}
